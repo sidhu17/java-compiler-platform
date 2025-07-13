@@ -30,7 +30,7 @@ function App() {
   const runCode = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/run", {
+      const res = await fetch("https://java-compiler-platform-backend.onrender.com/api/run", {
         method: "POST",
         headers: {
           "Content-Type": "text/plain",
