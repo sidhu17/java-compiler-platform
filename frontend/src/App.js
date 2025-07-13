@@ -30,7 +30,7 @@ function App() {
   const runCode = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://java-compiler-platform-backend.onrender.com/api/run", {
+      const res = await fetch("https://java-compiler-platform-production.up.railway.app/api/run", {
         method: "POST",
         headers: {
           "Content-Type": "text/plain",
