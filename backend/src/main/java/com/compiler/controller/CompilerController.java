@@ -7,7 +7,6 @@ import java.util.Map;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -32,13 +31,13 @@ public class CompilerController {
     @PostMapping("/run")
     public ResponseEntity<String> runJavaCode(@RequestBody String combinedCode) {
         try {
-            // Extract Main.java (or fallback)
             Map<String, String> files = splitCodeByFiles(combinedCode);
             String code = files.getOrDefault("Main.java", files.values().iterator().next());
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("language_id", 62); // Java (OpenJDK 17)
             requestBody.put("source_code", code);
+            requestBody.put("stdin", ""); // Optional input
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -47,15 +46,14 @@ public class CompilerController {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            // Step 1: Submit code
             ResponseEntity<Map> response = restTemplate.postForEntity(SUBMISSION_URL, request, Map.class);
-            if (response.getStatusCode() != HttpStatus.CREATED) {
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
                 return ResponseEntity.status(500).body("Error creating submission.");
             }
 
             String token = (String) response.getBody().get("token");
 
-            // Step 2: Poll for result
             Map result = null;
             for (int i = 0; i < 10; i++) {
                 ResponseEntity<Map> poll = restTemplate.exchange(
@@ -85,6 +83,7 @@ public class CompilerController {
             else return ResponseEntity.ok("Unknown Error.");
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
