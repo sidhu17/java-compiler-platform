@@ -5,19 +5,19 @@ import { java } from "@codemirror/lang-java";
 
 function App() {
   const [files, setFiles] = useState({
-    "Main.java": `public class Main {
+    "Main.java": `import java.util.Scanner;
+
+public class Main {
   public static void main(String[] args) {
-    System.out.println(Helper.greet());
+    Scanner sc = new Scanner(System.in);
+    String name = sc.nextLine();
+    System.out.println("Hello, " + name + "!");
   }
-}`,
-    "Helper.java": `public class Helper {
-  public static String greet() {
-    return "Hello from Helper!";
-  }
-}`,
+}`
   });
 
   const [activeFile, setActiveFile] = useState("Main.java");
+  const [userInput, setUserInput] = useState("World");
   const [output, setOutput] = useState({ text: "", isError: false });
   const [loading, setLoading] = useState(false);
 
@@ -32,16 +32,15 @@ function App() {
     try {
       const res = await fetch("https://java-compiler-platform-production.up.railway.app/api/run", {
         method: "POST",
-        headers: {
-          "Content-Type": "text/plain",
-        },
-        body: formatCodePayload(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: formatCodePayload(),
+          input: userInput
+        }),
       });
 
       const result = await res.text();
-      const isError =
-        result.toLowerCase().includes("error") ||
-        result.toLowerCase().includes("exception");
+      const isError = result.toLowerCase().includes("error") || result.toLowerCase().includes("exception");
       setOutput({ text: result, isError });
     } catch (err) {
       setOutput({ text: "Error: " + err.message, isError: true });
@@ -84,9 +83,17 @@ function App() {
           height="300px"
           extensions={[java()]}
           theme="dark"
-          onChange={(value) => handleCodeChange(value)}
+          onChange={handleCodeChange}
         />
       </div>
+
+      <textarea
+        placeholder="Standard input (System.in)..."
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        rows={4}
+        style={{ width: "90%", marginBottom: "1rem", padding: "0.5rem", borderRadius: "6px" }}
+      />
 
       <button onClick={runCode} disabled={loading}>
         {loading ? "Running..." : "Run Code"}
