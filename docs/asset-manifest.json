@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/java-compiler-platform/static/css/main.b2c1eada.css",
+    "main.js": "/java-compiler-platform/static/js/main.94c36518.js",
+    "index.html": "/java-compiler-platform/index.html",
+    "main.b2c1eada.css.map": "/java-compiler-platform/static/css/main.b2c1eada.css.map",
+    "main.94c36518.js.map": "/java-compiler-platform/static/js/main.94c36518.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b2c1eada.css",
+    "static/js/main.94c36518.js"
+  ]
+}
