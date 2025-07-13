@@ -1,0 +1,74 @@
+.App {
+  text-align: left;
+  padding: 20px;
+  font-family: monospace;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+.CodeMirror-wrapper {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+button {
+  margin-top: 12px;
+  padding: 10px 20px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+pre {
+  background-color: #1e1e1e;
+  color: #0f0;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: left;
+  width: 100%;
+  margin-top: 20px;
+  overflow-x: auto;
+  font-size: 14px;
+}
+
+.cm-editor {
+  min-height: 300px;
+  font-size: 14px;
+}
+
+pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: transparent;
+}
