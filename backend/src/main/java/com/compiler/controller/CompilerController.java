@@ -28,7 +28,7 @@ public class CompilerController {
     @Value("${compiler.rapidapi.host}")
     private String rapidApiHost;
 
-    private static final String SUBMISSION_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=false";
+    private static final String SUBMISSION_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=false";
     private static final String RESULT_URL = "https://judge0-ce.p.rapidapi.com/submissions/";
 
     private final RestTemplate restTemplate = new RestTemplate();
