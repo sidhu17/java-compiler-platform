@@ -3,6 +3,9 @@ import "./App.css";
 import CodeMirror from "@uiw/react-codemirror";
 import { java } from "@codemirror/lang-java";
 
+// You can use an environment variable for the backend URL for easy deployment config
+const API_URL = process.env.REACT_APP_BACKEND_URL || "https://java-compiler-platform-production.up.railway.app/api/run";
+
 function App() {
   const [files, setFiles] = useState({
     "Main.java": `import java.util.Scanner;
@@ -23,8 +26,10 @@ public class Main {
 
   const runCode = async () => {
     setLoading(true);
+    setOutput({ text: "", isError: false });
+
     try {
-      const response = await fetch("https://java-compiler-platform-production.up.railway.app/api/run", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -35,11 +40,17 @@ public class Main {
         })
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error ${response.status}: ${errorText}`);
+      }
+
       const resultText = await response.text();
       const isError = resultText.toLowerCase().includes("error") || resultText.toLowerCase().includes("exception");
       setOutput({ text: resultText, isError });
     } catch (err) {
-      setOutput({ text: "Error: " + err.message, isError: true });
+      console.error("Run Code Error:", err);
+      setOutput({ text: `Error: ${err.message}`, isError: true });
     } finally {
       setLoading(false);
     }
