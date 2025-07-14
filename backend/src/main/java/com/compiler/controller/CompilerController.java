@@ -1,5 +1,6 @@
 package com.compiler.controller;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +34,10 @@ public class CompilerController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private String encode(String input) {
+        return Base64.getEncoder().encodeToString(input.getBytes());
+    }
+
     @PostMapping("/run")
     public ResponseEntity<String> runJavaCode(@RequestBody Map<String, String> payload) {
         try {
@@ -46,10 +51,11 @@ public class CompilerController {
                 return ResponseEntity.badRequest().body("Java code cannot be empty.");
             }
 
+            // Prepare base64-encoded request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("language_id", 62); // Java (OpenJDK 17)
-            requestBody.put("source_code", code);
-            requestBody.put("stdin", stdin);
+            requestBody.put("source_code", encode(code));
+            requestBody.put("stdin", encode(stdin));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -68,6 +74,7 @@ public class CompilerController {
                 return ResponseEntity.status(500).body("No token returned.");
             }
 
+            // Poll for result
             Map<?, ?> result = null;
             for (int i = 0; i < 10; i++) {
                 ResponseEntity<Map> poll = restTemplate.exchange(
