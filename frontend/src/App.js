@@ -24,18 +24,20 @@ public class Main {
   const runCode = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://java-compiler-platform-production.up.railway.app/api/run", {
+      const response = await fetch("https://java-compiler-platform-production.up.railway.app/api/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           source_code: files[activeFile],
           input: userInput
         })
       });
 
-      const result = await res.text();
-      const isError = result.toLowerCase().includes("error") || result.toLowerCase().includes("exception");
-      setOutput({ text: result, isError });
+      const resultText = await response.text();
+      const isError = resultText.toLowerCase().includes("error") || resultText.toLowerCase().includes("exception");
+      setOutput({ text: resultText, isError });
     } catch (err) {
       setOutput({ text: "Error: " + err.message, isError: true });
     } finally {
@@ -59,7 +61,7 @@ public class Main {
               color: "#fff",
               border: "none",
               borderRadius: "5px",
-              cursor: "pointer",
+              cursor: "pointer"
             }}
           >
             {filename}
@@ -82,7 +84,12 @@ public class Main {
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
-        style={{ width: "90%", marginBottom: "1rem", padding: "0.5rem", borderRadius: "6px" }}
+        style={{
+          width: "90%",
+          marginBottom: "1rem",
+          padding: "0.5rem",
+          borderRadius: "6px"
+        }}
       />
 
       <button onClick={runCode} disabled={loading}>
@@ -100,7 +107,7 @@ public class Main {
           maxWidth: "800px",
           margin: "1rem auto",
           borderRadius: "6px",
-          overflowX: "auto",
+          overflowX: "auto"
         }}
       >
         {output.text}
