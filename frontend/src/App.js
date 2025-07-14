@@ -21,12 +21,6 @@ public class Main {
   const [output, setOutput] = useState({ text: "", isError: false });
   const [loading, setLoading] = useState(false);
 
-  const formatCodePayload = () => {
-    return Object.entries(files)
-      .map(([filename, content]) => `// File: ${filename}\n${content}`)
-      .join("\n\n");
-  };
-
   const runCode = async () => {
     setLoading(true);
     try {
@@ -34,9 +28,9 @@ public class Main {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: formatCodePayload(),
+          source_code: files[activeFile],
           input: userInput
-        }),
+        })
       });
 
       const result = await res.text();
@@ -47,10 +41,6 @@ public class Main {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCodeChange = (value) => {
-    setFiles({ ...files, [activeFile]: value });
   };
 
   return (
@@ -83,7 +73,7 @@ public class Main {
           height="300px"
           extensions={[java()]}
           theme="dark"
-          onChange={handleCodeChange}
+          onChange={(value) => setFiles({ ...files, [activeFile]: value })}
         />
       </div>
 
