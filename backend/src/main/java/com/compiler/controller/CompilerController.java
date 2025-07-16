@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @RestController
@@ -30,7 +32,7 @@ public class CompilerController {
     private String rapidApiHost;
 
     private static final String SUBMISSION_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=false";
-    private static final String RESULT_URL = "https://judge0-ce.p.rapidapi.com/submissions/";
+    private static final String RESULT_URL_TEMPLATE = "https://judge0-ce.p.rapidapi.com/submissions/%s?base64_encoded=true&fields=stdout,stderr,compile_output,status";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -38,20 +40,21 @@ public class CompilerController {
         return Base64.getEncoder().encodeToString(input.getBytes());
     }
 
+    private String decode(Object input) {
+        if (input == null) return "";
+        return new String(Base64.getDecoder().decode(input.toString()));
+    }
+
     @PostMapping("/run")
-    public ResponseEntity<String> runJavaCode(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> runJavaCode(@RequestBody Map<String, String> payload) {
         try {
             String code = payload.get("source_code");
             String stdin = payload.getOrDefault("input", "");
-
-            System.out.println("=== Java Code ===\n" + code);
-            System.out.println("=== Input ===\n" + stdin);
 
             if (code == null || code.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Java code cannot be empty.");
             }
 
-            // Prepare base64-encoded request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("language_id", 62); // Java (OpenJDK 17)
             requestBody.put("source_code", encode(code));
@@ -63,40 +66,65 @@ public class CompilerController {
             headers.set("x-rapidapi-host", rapidApiHost);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<Map> submission = restTemplate.postForEntity(SUBMISSION_URL, request, Map.class);
 
-            if (!submission.getStatusCode().is2xxSuccessful()) {
-                return ResponseEntity.status(500).body("Submission failed.");
+            // Step 1: Submit code
+            ResponseEntity<Map<String, Object>> submission = restTemplate.exchange(
+                SUBMISSION_URL,
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<>() {}
+            );
+
+            Map<String, Object> submissionBody = submission.getBody();
+            if (submissionBody == null || !submissionBody.containsKey("token")) {
+                return ResponseEntity.status(500).body("No token returned from Judge0.");
             }
 
-            String token = (String) submission.getBody().get("token");
-            if (token == null) {
-                return ResponseEntity.status(500).body("No token returned.");
-            }
+            String token = submissionBody.get("token").toString();
 
-            // Poll for result
-            Map<?, ?> result = null;
+            // Step 2: Poll result
+            Map<String, Object> result = null;
             for (int i = 0; i < 10; i++) {
-                ResponseEntity<Map> poll = restTemplate.exchange(
-                    RESULT_URL + token, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+                String resultUrl = String.format(RESULT_URL_TEMPLATE, token);
+                ResponseEntity<Map<String, Object>> poll = restTemplate.exchange(
+                    resultUrl,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    new ParameterizedTypeReference<>() {}
+                );
+
                 result = poll.getBody();
-                if (result == null) break;
-                Object status = ((Map<?, ?>) result.get("status")).get("description");
-                if (status != null && !status.toString().matches("(?i)In Queue|Processing")) break;
-                Thread.sleep(1000);
+                if (result == null) continue;
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> statusMap = (Map<String, Object>) result.get("status");
+                String status = statusMap != null ? Objects.toString(statusMap.get("description"), "") : "";
+
+                if (!status.equalsIgnoreCase("In Queue") && !status.equalsIgnoreCase("Processing")) {
+                    break;
+                }
+
+                Thread.sleep(1000); // wait before next poll
             }
 
-            if (result == null) return ResponseEntity.status(500).body("No result found.");
+            if (result == null) {
+                return ResponseEntity.status(500).body("No result received.");
+            }
 
-            String stdout = Objects.toString(result.get("stdout"), "");
-            String stderr = Objects.toString(result.get("stderr"), "");
-            String compileOutput = Objects.toString(result.get("compile_output"), "");
+            // Decode and return output
+            String stdout = decode(result.get("stdout"));
+            String stderr = decode(result.get("stderr"));
+            String compileOutput = decode(result.get("compile_output"));
 
-            if (!stdout.isBlank()) return ResponseEntity.ok(stdout);
-            if (!compileOutput.isBlank()) return ResponseEntity.ok("Compilation Error:\n" + compileOutput);
-            if (!stderr.isBlank()) return ResponseEntity.ok("Runtime Error:\n" + stderr);
+            Map<String, String> response = new HashMap<>();
+            response.put("output", stdout);
+            response.put("compile_output", compileOutput);
+            response.put("stderr", stderr);
 
-            return ResponseEntity.ok("No output.");
+            return ResponseEntity.ok(response);
+
+        } catch (InterruptedException | RestClientException e) {
+            return ResponseEntity.status(500).body("Error occurred: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Unexpected error: " + e.getMessage());
         }
