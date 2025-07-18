@@ -1,25 +1,18 @@
 # -------- Stage 1: Build with Maven --------
-FROM maven:3.9.6-eclipse-temurin-21 as builder
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper & config
-COPY mvnw .
-COPY .mvn .mvn
+# Copy POM and preload dependencies
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Make mvnw executable
-RUN chmod +x mvnw
+# Copy full source code
+COPY src ./src
 
-# Download dependencies (speeds up rebuilds)
-RUN ./mvnw dependency:go-offline
-
-# Copy source code
-COPY src src
-
-# Build the project
-RUN ./mvnw clean package -DskipTests -B
+# Build the project (skip tests for speed)
+RUN mvn clean package -DskipTests -B
 
 
 # -------- Stage 2: Run with JRE --------
@@ -28,11 +21,11 @@ FROM eclipse-temurin:21-jre
 # Set working directory
 WORKDIR /app
 
-# Copy built JAR from previous stage
+# Copy the compiled JAR from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose port 8080
+# Expose the app port
 EXPOSE 8080
 
-# Set entrypoint
+# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
