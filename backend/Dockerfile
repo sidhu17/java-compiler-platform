@@ -1,34 +1,38 @@
-# Stage 1: Build with Maven
-FROM maven:3.8.7-eclipse-temurin-17 AS builder
-WORKDIR /app
-
-# Cache Maven dependencies
-COPY mvnw pom.xml ./
-COPY .mvn .mvn
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
-
-# Copy all source files and build the jar
-COPY src src
-RUN ./mvnw clean package -DskipTests -B
-
-# Stage 2: Run with JRE
-FROM eclipse-temurin:17-jre-alpine
-
-# Optional: Install tini for graceful shutdown handling
-RUN apk add --no-cache tini
+# -------- Stage 1: Build with Maven --------
+FROM maven:3.9.6-eclipse-temurin-21 as builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy the built JAR from the build stage
-COPY --from=builder /app/target/java-compiler-backend.jar app.jar
+# Copy Maven wrapper & config
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
-# Set environment variables (used in application.properties)
-ENV RAPIDAPI_KEY=e004417eb7msh105ea63cbc83000p15f4a5jsn620d1c0e206a
-ENV RAPIDAPI_HOST=judge0-ce.p.rapidapi.com
+# Make mvnw executable
+RUN chmod +x mvnw
 
-# Expose backend port
+# Download dependencies (speeds up rebuilds)
+RUN ./mvnw dependency:go-offline
+
+# Copy source code
+COPY src src
+
+# Build the project
+RUN ./mvnw clean package -DskipTests -B
+
+
+# -------- Stage 2: Run with JRE --------
+FROM eclipse-temurin:21-jre
+
+# Set working directory
+WORKDIR /app
+
+# Copy built JAR from previous stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose port 8080
 EXPOSE 8080
 
-# Start the application using tini
-ENTRYPOINT ["/sbin/tini", "--", "java", "-jar", "app.jar"]
+# Set entrypoint
+ENTRYPOINT ["java", "-jar", "app.jar"]
