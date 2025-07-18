@@ -1,3 +1,17 @@
+# Build
 target/
-*.class
-Main.java
+
+# Maven wrapper files (optional)
+/.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env

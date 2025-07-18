@@ -14,21 +14,21 @@ RUN ./mvnw clean package -DskipTests -B
 # Stage 2: Run with JRE
 FROM eclipse-temurin:17-jre-alpine
 
-# Optional: Install tini for better signal handling
+# Optional: Install tini for graceful shutdown handling
 RUN apk add --no-cache tini
 
 # Set working directory
 WORKDIR /app
 
-# Copy the built jar file from builder stage
-COPY --from=builder /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
+# Copy the built JAR from the build stage
+COPY --from=builder /app/target/java-compiler-backend.jar app.jar
 
-# Set required environment variables for Spring to read (used in CompilerController)
+# Set environment variables (used in application.properties)
 ENV RAPIDAPI_KEY=e004417eb7msh105ea63cbc83000p15f4a5jsn620d1c0e206a
 ENV RAPIDAPI_HOST=judge0-ce.p.rapidapi.com
 
-# Expose the server port
+# Expose backend port
 EXPOSE 8080
 
-# Start the application using tini for clean shutdown
+# Start the application using tini
 ENTRYPOINT ["/sbin/tini", "--", "java", "-jar", "app.jar"]
