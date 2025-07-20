@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "homepage": "https://sidhu17.github.io/java-compiler-platform",
-  "proxy": "http://localhost:8080",
   "dependencies": {
     "@codemirror/lang-java": "^6.0.2",
     "@uiw/react-codemirror": "^4.24.1",
