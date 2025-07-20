@@ -1,5 +1,4 @@
 package com.compiler.controller;
-
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +43,12 @@ public class CompilerController {
     private String decode(Object input) {
         if (input == null) return "";
         return new String(Base64.getDecoder().decode(input.toString()));
+    }
+
+    // ✅ Health check or default root
+    @GetMapping("/")
+    public String home() {
+        return "Java Compiler Backend is running! 🚀";
     }
 
     @PostMapping("/run")

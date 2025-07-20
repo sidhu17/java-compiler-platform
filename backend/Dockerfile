@@ -1,31 +1,36 @@
 # -------- Stage 1: Build with Maven --------
-FROM maven:3.9.6-eclipse-temurin-21 as builder
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Copy Maven wrapper and project files
+COPY pom.xml . 
+COPY .mvn/ .mvn/
+COPY mvnw .
 
-# Copy source code
+# Download dependencies separately for better Docker caching
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+
+# Copy source code after caching dependencies
 COPY src ./src
 
-# Build the project
-RUN mvn clean package -DskipTests -B
+# Build the project (skip tests)
+RUN ./mvnw clean package -DskipTests -B
 
 
 # -------- Stage 2: Run with JRE --------
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-jammy
 
-# Set working directory
 WORKDIR /app
 
-# Copy built JAR from previous stage
+# Copy the built jar
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose port
-EXPOSE 8080
+# Dynamic port from Railway
+ENV PORT=8080
 
-# Run app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Expose dynamic port (so Dockerfile is consistent with app)
+EXPOSE ${PORT}
+
+# Run the app
+CMD ["sh", "-c", "java -jar app.jar"]
